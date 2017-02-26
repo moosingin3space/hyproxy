@@ -1,0 +1,6 @@
+[general]
+listen_addr = "0.0.0.0:8000"
+
+[paths]
+"/httpbin" = "http://httpbin.org"
+"/site-1" = "http://localhost:2015"
