@@ -45,4 +45,16 @@ listen_addr = "0.0.0.0:8000"
 "/static" = "https://cdn.site.org"
 ```
 
+To configure SSL/TLS, the `tls_key` parameter of the `general` table must be set
+to a PKCS#12 that contains the private key and the chain of certificates for the
+server. The `tls_password` must also be set to the password used to protect the file.
+Both parameters must be set to enable SSL/TLS.
+
+```toml
+[general]
+listen_addr = "0.0.0.0:4443"
+tls_key = "identity.p12"
+tls_password = "strongpassword?"
+```
+
 This syntax will be extended to support some of the features mentioned above.
