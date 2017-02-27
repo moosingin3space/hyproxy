@@ -1,3 +1,5 @@
+[![Gitter](https://img.shields.io/gitter/room/hyproxy/hyproxy.svg)](https://gitter.im/hyproxy/hyproxy)
+
 ## Hyproxy: a reverse proxy for HTTP
 
 Hyproxy is an HTTP reverse proxy built on Hyper and Tokio. It aims for high
@@ -46,3 +48,4 @@ listen_addr = "0.0.0.0:8000"
 ```
 
 This syntax will be extended to support some of the features mentioned above.
+
