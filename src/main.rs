@@ -10,6 +10,8 @@ extern crate toml;
 extern crate error_chain;
 extern crate tokio_core;
 extern crate tokio_signal;
+extern crate tokio_tls;
+extern crate native_tls;
 extern crate chrono;
 extern crate regex;
 
@@ -30,6 +32,10 @@ use futures::{Future, Stream};
 use tokio_core::reactor::Core;
 use tokio_core::io::Io;
 use tokio_core::net::TcpListener;
+
+use tokio_tls::TlsAcceptorExt;
+
+use native_tls::{Pkcs12, TlsAcceptor};
 
 static CONFIG_FILE_NAME: &'static str = "Hyproxy.toml";
 
@@ -96,17 +102,38 @@ fn run() -> errors::Result<()> {
             config.paths.iter().map(|(prefix, _)| make_regex_string(prefix)))?,
     };
 
+    let acceptor = if let (Some(tls_key), Some(tls_password)) = (config.general.tls_key, config.general.tls_password) {
+        let mut file = File::open(&tls_key)?;
+        let mut file_content = Vec::new();
+        file.read_to_end(&mut file_content)?;
+        let pkcs12 = Pkcs12::from_der(&file_content, &tls_password)?;
+        Some(TlsAcceptor::builder(pkcs12)?.build()?)
+    } else {
+        None
+    };
+
     let addr : SocketAddr = config.general.listen_addr.parse()?;
     let sock = TcpListener::bind(&addr, &handle)?;
     let client = hyper::Client::new(&handle);
     let http = Http::new();
-    println!("Listening on http://{} with 1 thread...", sock.local_addr()?);
-    let server = sock.incoming().for_each(|(sock, remote_addr)| {
-        let service = proxy::Proxy { routes: routes.clone(), client: client.clone() };
-        http.bind_connection(&handle, sock, remote_addr, service);
-        Ok(())
-    });
-    core.run(server)?;
+    println!("Listening on http{}://{} with 1 thread...", match acceptor { Some(_) => "s", None => "" }, sock.local_addr()?);
+    if let Some(acceptor) = acceptor {
+        let server = sock.incoming().for_each(|(sock, remote_addr)| {
+            let service = proxy::Proxy { routes: routes.clone(), client: client.clone() };
+                acceptor.accept_async(sock).join(Ok(remote_addr)).and_then(|(sock, remote_addr)| {
+                    http.bind_connection(&handle, sock, remote_addr, service);
+                    Ok(())
+            }).map_err(|e| { std::io::Error::new(std::io::ErrorKind::Other, e) })
+        });
+        core.run(server)?;
+    } else {
+        let server = sock.incoming().for_each(|(sock, remote_addr)| {
+            let service = proxy::Proxy { routes: routes.clone(), client: client.clone() };
+            http.bind_connection(&handle, sock, remote_addr, service);
+            Ok(())
+        });
+        core.run(server)?;
+    };
     Ok(())
 }
 

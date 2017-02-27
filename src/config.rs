@@ -9,4 +9,6 @@ pub struct Config {
 #[derive(Deserialize, Debug, Clone)]
 pub struct GeneralConfig {
     pub listen_addr: String,
+    pub tls_key: Option<String>,
+    pub tls_password: Option<String>,
 }
