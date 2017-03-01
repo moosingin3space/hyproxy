@@ -11,6 +11,7 @@ use chrono::prelude::*;
 
 use regex;
 
+use tlsclient::HttpsConnector;
 use errors;
 
 #[derive(Clone)]
@@ -22,6 +23,7 @@ pub struct Routes {
 pub struct Proxy {
     pub routes: Routes,
     pub client: Client<HttpConnector, Body>,
+    pub tls_client: Client<HttpsConnector, Body>,
 }
 
 impl Service for Proxy {
@@ -52,9 +54,15 @@ impl Service for Proxy {
                     };
                     let url = url.join(site_url).unwrap();
                     println!("forward request to {}", url);
+                    let secure = url.scheme() == "https";
                     let mut proxied_request = hyper::client::Request::new(req.method().clone(), url);
                     *proxied_request.headers_mut() = req.headers().clone();
-                    Box::new(self.client.request(proxied_request).then(|res| {
+                    let req = if secure {
+                        self.tls_client.request(proxied_request)
+                    } else {
+                        self.client.request(proxied_request)
+                    };
+                    Box::new(req.then(|res| {
                         println!("got response back!");
                         if let Ok(res) = res {
                         futures::future::ok(
