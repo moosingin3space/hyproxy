@@ -128,7 +128,7 @@ fn run() -> errors::Result<()> {
                 acceptor.accept_async(sock).join(Ok(remote_addr)).and_then(|(sock, remote_addr)| {
                     http.bind_connection(&handle, sock, remote_addr, service);
                     Ok(())
-            }).map_err(|e| { std::io::Error::new(std::io::ErrorKind::Other, e) })
+            }).or_else(|e| { println!("error accepting TLS connection: {}", e); Ok(()) })
         });
         core.run(server)?;
     } else {
