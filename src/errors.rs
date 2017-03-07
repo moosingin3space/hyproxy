@@ -6,6 +6,7 @@ error_chain! {
         Log(::log::SetLoggerError);
         Http(::hyper::Error);
         Regex(::regex::Error);
+        Tls(::native_tls::Error);
     }
 
     errors {
