@@ -12,7 +12,6 @@ servers.
 Required features for 1.0:
 
 - Detailed logging
-- SSL/TLS termination
 - Static files support
 - Virtual Hosts/SNI
 - Better documentation
