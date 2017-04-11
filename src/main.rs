@@ -125,9 +125,9 @@ fn run() -> errors::Result<()> {
     if let Some(acceptor) = acceptor {
         let server = sock.incoming().for_each(|(sock, remote_addr)| {
             let service = proxy::Proxy { routes: routes.clone(), client: client.clone(), tls_client: tls_client.clone() };
-                acceptor.accept_async(sock).join(Ok(remote_addr)).and_then(|(sock, remote_addr)| {
-                    http.bind_connection(&handle, sock, remote_addr, service);
-                    Ok(())
+            acceptor.accept_async(sock).join(Ok(remote_addr)).and_then(|(sock, remote_addr)| {
+                http.bind_connection(&handle, sock, remote_addr, service);
+                Ok(())
             }).or_else(|e| { println!("error accepting TLS connection: {}", e); Ok(()) })
         });
         core.run(server)?;
